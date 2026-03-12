@@ -2,10 +2,12 @@ from pydantic import BaseModel, EmailStr, Field
 from uuid import UUID
 from datetime import datetime
 
-class UserRead(BaseModel):
-    id: int
+class UserBase(BaseModel):
     account_name: str 
     email: EmailStr
+
+class UserRead(UserBase):
+    id: int
 
 class Notepad(BaseModel):
     id: int
@@ -13,7 +15,7 @@ class Notepad(BaseModel):
     notes: str
     time: datetime
 
-class  UserCreate(UserRead):
+class UserCreate(UserBase):
     password: str = Field(...,min_length = 8)
 
 class Token(BaseModel):
