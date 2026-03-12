@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import  AsyncSession
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
-from app.schema import Notepad, UserRead ,UserCreate,Token
+from app.schema import Notepad, UserRead ,UserCreate ,Token
 from app.auth import create_access_token, hash_password, verify_password, verify_access_token
 from app.config import settings
 from app.user import get_current_user
@@ -68,10 +68,14 @@ async def login_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     '''except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")'''
     
-@app.get("/me")
+@app.get("/User/me", response_model=UserRead)
 async def read_users_me(
-    current_user: Annotated[User, Depends(get_current_user)]): 
-    return current_user
+    current_user_id : Annotated[User, Depends(get_current_user)],session: AsyncSession = Depends(get_async_session)): 
+    result = await session.execute(select(User).where(User.id == current_user_id))
+    current_user_info = result.scalars().first()
+    if not result:
+        raise HTTPException(status_code=404, detail="User not found")
+    return current_user_info
 
 @app.get("/view")
 async def show_notes(user: User = Depends(get_current_user),

@@ -1,16 +1,48 @@
 import streamlit as st
 import httpx
 import asyncio
+import extra_streamlit_components as stx
+
 
 url = "http://127.0.0.1:8000"
 
+cookie_manager =stx.CookieManager()
 client = httpx.AsyncClient()
+cookie_token = cookie_manager.get(cookie="auth_token")
+
+if cookie_token and "token" not in st.session_state:
+    st.session_state["token"] = cookie_token
+
+async def get_user_info():
+    try:
+        headers =headers = {"Authorization": f"Bearer {st.session_state.token}"}
+        if "user_info" not in st.session_state or "account_name" not in st.session_state:
+            response = await client.get(f"{url}/User/me", headers = headers)
+            if response.status_code == 200:
+                data = response.json()
+                st.session_state["user_info"] = data.get("id")
+                st.session_state["account_name"] = data.get("account_name")
+            else: 
+                logout()
+    except Exception as e:
+        st.error(f"Authentication error: {e}")
+
+async def get_notes():
+    try:
+        notes = await client.get(f"{url}/me/view")
+        for note in notes:
+            st.write(note)
+    except Exception as e:
+        st.error(f"error: {e}")
+
 
 async def login(email, pwd):
     try:
         response = await client.post(f"{url}/api/User/token" , data={"username": email, "password": pwd})
         if response.status_code == 200:
-            st.session_state["token"] = response.json().get("access_token")
+            saved_token = response.json().get("access_token")
+            st.session_state["token"] = saved_token
+            cookie_manager.set("auth_token", saved_token, key="set_cookie")
             st.success("Login successful")
             st.rerun()
         else:
@@ -18,13 +50,15 @@ async def login(email, pwd):
     except Exception as e:
         st.error(f"error: {e}")
 
+def logout():
+    st.session_state.clear()
+    cookie_manager.delete("auth_token")
 
 def set_signup():
-    st.session_state.form = "signup"
+    st.session_state.form = "signup" 
+
 def set_login():
     st.session_state.form = "login"
-
-
 
 async def signup(name ,email, pwd):
     try:
@@ -67,6 +101,9 @@ if "token" not in st.session_state:
                 asyncio.run(signup(account_name ,user_email, pwd))
 
 else:
-    st.sidebar.button("Logout", on_click=lambda: st.session_state.clear())
-    st.title("📝 Your Notes")
-    st.write("You are logged in. Ready to build the notes list?")
+    st.sidebar.button("Logout", on_click=logout)
+    asyncio.run(get_user_info())
+    user_info = st.session_state.get("user_info", {})
+    st.title("📝 Notesmaker")
+    st.title(f"Welcome back, {st.session_state.account_name}")
+    
