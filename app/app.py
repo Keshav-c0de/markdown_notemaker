@@ -5,11 +5,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import  AsyncSession
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
-from app.schema import Notepad, UserRead ,UserCreate ,Token
+from app.schema import Notepad, UserRead ,UserCreate ,Token, NoteUpdate
 from app.auth import create_access_token, hash_password, verify_password, verify_access_token
 from app.config import settings
 from app.user import get_current_user
-from app.db import Note, get_async_session , create_db_and_tables, User
+from app.db import Note, get_async_session , create_db_and_tables, User 
 from fastapi.middleware.cors import CORSMiddleware
 
 @asynccontextmanager
@@ -85,17 +85,20 @@ async def show_notes(user: User = Depends(get_current_user),
     return notes
 
 @app.patch("/edit/{note_id}")
-async def edit_note(note_id : str, Note_data : Notepad, 
-                    note_update: str | None = None, 
+async def edit_note(note_id : str,
+                    update_data : NoteUpdate, 
                     user: User = Depends(get_current_user),
                     session: AsyncSession = Depends(get_async_session)):
     try:
         result = await session.get(Note, int(note_id))
-        result.note = note_update
+        if not result:
+            raise HTTPException(status_code=404, detail="No result")
+        result.note = update_data.notes
+        await session.commit()
+        return result
     except Exception as e:
-        raise HTTPException(status_code= 404, detail= "Not found")
-    await session.commit()
-    return result
+        raise HTTPException(status_code= e, detail= "Not found")
+    
 
 @app.put("/create")
 async def create_note(
@@ -116,7 +119,7 @@ async def create_note(
         raise HTTPException(status_code = 500, detail = {e})
 
 
-@app.delete("/edit/remove/{note_id}")
+@app.delete("/remove/{note_id}")
 async def  delete_note(note_id: int,user: User = Depends(get_current_user),session: AsyncSession = Depends(get_async_session)):
     try:
         result = await session.execute(select(Note).where(Note.id== note_id))

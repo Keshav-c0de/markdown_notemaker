@@ -9,10 +9,12 @@ class UserBase(BaseModel):
 class UserRead(UserBase):
     id: int
 
+class NoteUpdate(BaseModel):
+    notes: str
+
 class Notepad(BaseModel):
     id: int
     user_id: int
-    notes: str
     time: datetime
 
 class UserCreate(UserBase):
