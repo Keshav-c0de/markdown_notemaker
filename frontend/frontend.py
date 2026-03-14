@@ -1,58 +1,91 @@
 import streamlit as st
 import httpx
 import asyncio
-import extra_streamlit_components as stx
+import time
 
 
 url = "http://127.0.0.1:8000"
 
-cookie_manager =stx.CookieManager()
-client = httpx.AsyncClient()
-cookie_token = cookie_manager.get(cookie="auth_token")
-
-if cookie_token and "token" not in st.session_state:
-    st.session_state["token"] = cookie_token
-
 async def get_user_info():
     try:
-        headers =headers = {"Authorization": f"Bearer {st.session_state.token}"}
-        if "user_info" not in st.session_state or "account_name" not in st.session_state:
-            response = await client.get(f"{url}/User/me", headers = headers)
-            if response.status_code == 200:
-                data = response.json()
-                st.session_state["user_info"] = data.get("id")
-                st.session_state["account_name"] = data.get("account_name")
-            else: 
-                logout()
+        async with httpx.AsyncClient() as client:
+            headers = {"Authorization": f"Bearer {st.session_state.token}"}
+            if "user_info" not in st.session_state or "account_name" not in st.session_state:
+                response = await client.get(f"{url}/User/me", headers = headers)
+                if response.status_code == 200:
+                    data = response.json()
+                    st.session_state["user_info"] = data.get("id")
+                    st.session_state["account_name"] = data.get("account_name")
+                else: 
+                    logout()
     except Exception as e:
         st.error(f"Authentication error: {e}")
 
 async def get_notes():
     try:
-        notes = await client.get(f"{url}/me/view")
-        for note in notes:
-            st.write(note)
+        headers=  {"Authorization": f"Bearer {st.session_state.token}"}
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{url}/view",  headers= headers)
+            if response.status_code == 200:
+                notes_data = response.json()
+                if not notes_data:
+                    st.info("No notes found.")
+                    return
+
+                for data in notes_data:
+                    note_text = data.get("note")
+                    note_time = data.get("time")
+                    formatted_date = note_time.split("T")[0]
+                    with st.container(border=True):
+                        st.write(note_text)
+                        if note_time:
+                            st.caption(f"Created: {formatted_date}")
+            else:
+                st.error("Failed to fetch notes.")
     except Exception as e:
         st.error(f"error: {e}")
 
+async def save_note():
+
+    note_string = st.session_state.get("draft_note", "")
+    if not note_string.strip():
+        st.warning("Cannot save an empty note!")
+        return
+    try:
+        headers = {"Authorization": f"Bearer {st.session_state.token}"}
+        async with httpx.AsyncClient() as client:
+            response = await client.put(f"{url}/create", headers= headers , data={"note_content": note_string})
+            if response.status_code== 200:
+                st.success("Added note successful")
+                st.session_state["draft_note"] = ""
+            else:
+                st.error(f"Something went wrong: {response.status_code}")
+
+    except Exception as e:
+        st.error(f"error: {e}")
 
 async def login(email, pwd):
     try:
-        response = await client.post(f"{url}/api/User/token" , data={"username": email, "password": pwd})
-        if response.status_code == 200:
-            saved_token = response.json().get("access_token")
-            st.session_state["token"] = saved_token
-            cookie_manager.set("auth_token", saved_token, key="set_cookie")
-            st.success("Login successful")
-            st.rerun()
-        else:
-            st.error("Invalid credentials")
+        async with httpx.AsyncClient() as client:
+            response = await client.post(f"{url}/api/User/token" , data={"username": email, "password": pwd})
+            if response.status_code == 200:
+                saved_token = response.json().get("access_token")
+                st.session_state["token"] = saved_token
+                st.success("Login successful")
+                st.rerun()
+            else:
+                st.error("Invalid credentials")
     except Exception as e:
         st.error(f"error: {e}")
 
 def logout():
-    st.session_state.clear()
     cookie_manager.delete("auth_token")
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.rerun()
+
+def note_note():
+    asyncio.run(save_note())
 
 def set_signup():
     st.session_state.form = "signup" 
@@ -62,18 +95,19 @@ def set_login():
 
 async def signup(name ,email, pwd):
     try:
-        response = await client.post(f"{url}/register", json = {
-            "account_name":name,
-            "email": email,
-            "password": pwd})
-        if response.status_code == 200:
-            st.success("Signup successful, Now login")
-            await asyncio.sleep(2)
-            st.rerun()
-        elif response.status_code == 409:
-            st.success("already Signup, Try login")
-            await asyncio.sleep(2)
-            st.rerun()
+        async with httpx.AsyncClient() as client:
+            response = await client.post(f"{url}/register", json = {
+                "account_name":name,
+                "email": email,
+                "password": pwd})
+            if response.status_code == 200:
+                st.success("Signup successful, Now login")
+                await asyncio.sleep(2)
+                st.rerun()
+            elif response.status_code == 409:
+                st.success("already Signup, Try login")
+                await asyncio.sleep(2)
+                st.rerun()
     except Exception as e:
         st.error(f"error: {e}")
 
@@ -103,7 +137,26 @@ if "token" not in st.session_state:
 else:
     st.sidebar.button("Logout", on_click=logout)
     asyncio.run(get_user_info())
-    user_info = st.session_state.get("user_info", {})
     st.title("📝 Notesmaker")
-    st.title(f"Welcome back, {st.session_state.account_name}")
+    st.subheader(f"Welcome back, {st.session_state.get('account_name', 'User')}", divider=True)
     
+    with st.expander("➕ Add a new note", expanded=False):
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.text_area(
+                "Markdown Editor (Press Ctrl+Enter to update)", 
+                height=200, 
+                key="draft_note"
+            )
+            st.button("Save Note", type="primary", on_click=note_note)
+            
+        with col2:
+            st.write("Live Preview:")
+            live_text = st.session_state.get("draft_note", "")
+            if live_text:
+                st.markdown(live_text)
+            else:
+                st.caption("*Start typing to see preview...*")
+
+    asyncio.run(get_notes())
