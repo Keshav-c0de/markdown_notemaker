@@ -6,6 +6,9 @@ import time
 
 url = "http://backend:8000"
 
+if "token" not in st.session_state:
+    st.session_state["token"] = None
+
 async def get_user_info():
     try:
         async with httpx.AsyncClient() as client:
@@ -189,7 +192,7 @@ if "image" not in st.session_state:
     st.session_state.image = True
 
 
-if "token" not in st.session_state:
+if "token" not in st.session_state or st.session_state.token == None:
     if st.session_state.form == "login":
         st.title("login form")
         with st.form("login_form"):
