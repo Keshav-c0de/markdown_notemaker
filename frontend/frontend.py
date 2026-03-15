@@ -4,7 +4,7 @@ import asyncio
 import time
 
 
-url = "http://127.0.0.1:8000"
+url = "http://backend:8000"
 
 async def get_user_info():
     try:
