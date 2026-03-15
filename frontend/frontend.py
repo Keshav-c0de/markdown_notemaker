@@ -80,7 +80,7 @@ async def save_note():
         async with httpx.AsyncClient() as client:
             response = await client.put(f"{url}/create", headers= headers , data={"note_content": note_string})
             if  response.status_code == 200:
-                st.success("Removed note successful")
+                st.success("Saved note successful")
             else:
                 st.error(f"Something went wrong: {response.status_code}")
     except Exception as e:
@@ -127,10 +127,8 @@ async def login(email, pwd):
         st.error(f"error: {e}")
 
 def logout():
-    cookie_manager.delete("auth_token")
     for key in list(st.session_state.keys()):
         del st.session_state[key]
-    st.rerun()
 
 def start_edit(note_id):
     st.session_state["editing_note_id"] = note_id
@@ -192,8 +190,8 @@ if "image" not in st.session_state:
 
 
 if "token" not in st.session_state:
-    st.title("login form")
     if st.session_state.form == "login":
+        st.title("login form")
         with st.form("login_form"):
             user_email = st.text_input("Email Address")
             pwd = st.text_input("Password", type= "password")
@@ -205,6 +203,7 @@ if "token" not in st.session_state:
             if btn_login:
                 asyncio.run(login(user_email, pwd))
     elif st.session_state.form == "signup":
+        st.title("signup form")
         with st.form("signup_form"):
             account_name = st.text_input("Name")
             user_email = st.text_input("Email Address")

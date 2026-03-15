@@ -1,10 +1,13 @@
+import os
 from sqlalchemy.orm import DeclarativeBase, Mapped, relationship , mapped_column
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import String, ForeignKey, DateTime, Text
 from datetime import datetime
 from sqlalchemy.sql import func
+from dotenv import load_dotenv
 
-DATABASE_URL= "sqlite+aiosqlite:///./notepad.db"
+load_dotenv()
+DATABASE_URL= os.getenv("DATABASE_URL")
 
 class Base(DeclarativeBase):
     pass
@@ -29,7 +32,7 @@ class Note(Base):
 
 
 
-engine= create_async_engine(DATABASE_URL)
+engine= create_async_engine(DATABASE_URL, echo=True)
 async_session_maker = async_sessionmaker(engine, expire_on_commit= False)
 
 async def create_db_and_tables():

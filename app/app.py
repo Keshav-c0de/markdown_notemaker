@@ -71,7 +71,7 @@ async def login_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 @app.get("/User/me", response_model=UserRead)
 async def read_users_me(
     current_user_id : Annotated[User, Depends(get_current_user)],session: AsyncSession = Depends(get_async_session)): 
-    result = await session.execute(select(User).where(User.id == current_user_id))
+    result = await session.execute(select(User).where(User.id == int(current_user_id)))
     current_user_info = result.scalars().first()
     if not result:
         raise HTTPException(status_code=404, detail="User not found")
@@ -108,7 +108,7 @@ async def create_note(
     try:
         created_note = Note(
         note= note_content,
-        user_id= user)
+        user_id= int(user))
 
         session.add(created_note)
         await session.commit()
