@@ -6,7 +6,7 @@ A full-stack, containerized Notes application built with a decoupled architectur
 
 ## 📸 App Preview
 
-![Image](https://github.com/user-attachments/assets/b3eacbe8-8d33-45b3-89bc-dd1397f47f90)
+![Image](https://github.com/user-attachments/assets/b3eacbe8-8d33-45b3-89bc-dd1397f47f90)  
 ![Image](https://github.com/user-attachments/assets/3b4b7eef-4644-42c0-9e06-9f809269d515)
 
 ---
