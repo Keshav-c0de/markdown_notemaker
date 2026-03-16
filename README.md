@@ -5,7 +5,9 @@ A full-stack, containerized Notes application built with a decoupled architectur
 ---
 
 ## 📸 App Preview
-*(Drag and drop your screenshot image right here on GitHub to automatically embed it!)*
+*
+
+*
 
 ---
 
@@ -51,14 +53,13 @@ This app requires a database connection to run. You must create a .env file in t
     # Create the file
     touch .env
     ```
-
 Inside the .env file, add your secret keys:
 
-    ```bash
-    DATABASE_URL="your_supabase_or_postgres_url_here"
-    # Add any other required secrets here 
-
-    ```
+   ```bash
+      DATABASE_URL="your_supabase_or_postgres_url_here"
+      # Add any other required secrets here 
+   ```
+    
 3. Build and Run with Docker
 Thanks to docker-compose, booting up the entire infrastructure takes just one command:
 
@@ -74,21 +75,21 @@ Thanks to docker-compose, booting up the entire infrastructure takes just one co
 
 This application is production-ready and designed to be hosted on a cloud server.
 
-    1. Provision an EC2 Instance: Ubuntu LTS recommended.
+   1. Provision an EC2 Instance: Ubuntu LTS recommended.
 
-    2. Open Firewalls: Ensure Inbound Rules in the AWS Security Group allow Custom TCP traffic on ports     8000 and 8501.
+   2. Open Firewalls: Ensure Inbound Rules in the AWS Security Group allow Custom TCP traffic on ports     8000 and 8501.
 
-    3. Transfer Code & Secrets: Clone the repo and securely recreate the .env file on the server.
+   3. Transfer Code & Secrets: Clone the repo and securely recreate the .env file on the server.
 
-    4. Launch in Background:
+   4. Launch in Background:
 
-    ```bash
-    sudo docker compose up -d --build
-    ```
-    5. Monitor Logs:
+   ```bash
+   sudo docker compose up -d --build
+   ```
+   5. Monitor Logs:
 
-    ```bash
-    sudo docker compose logs -f
-    ```
+   ```bash
+   sudo docker compose logs -f
+   ```
 
 ## Built by keshav-c0de
